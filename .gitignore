@@ -1,0 +1,12 @@
+
+# TownPass：fvm 下載的 Flutter SDK 與建置產物不進版控
+TownPass/flutter/
+TownPass/.fvm/
+TownPass/build/
+TownPass/.dart_tool/
+
+# TownPass：fvm 下載的 Flutter SDK 與建置產物不進版控
+TownPass/flutter/
+TownPass/.fvm/
+TownPass/build/
+TownPass/.dart_tool/
