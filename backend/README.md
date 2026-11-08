@@ -124,7 +124,7 @@ docker compose logs api | grep '<X-Request-ID>'
 
 ## 環境變數
 
-本機 Compose 預設使用 LocalStack S3，`.env.example` 的 `test` credential 只適用於 LocalStack。真實 AWS 環境應由 ECS task role、EC2 instance profile 或 IRSA 提供 IAM credential，不要把 access key 寫進 image、Git 或部署設定檔。
+本機 Compose 與根目錄的 EC2 版 `docker-compose.yml` 都使用 MinIO（S3 相容）；本機 `.env.example` 的 `minioadmin` credential 只適用於本機 MinIO，EC2 版必須在 `.env` 設定自己的帳密。官方 `minio/minio` 映像檔已從 Docker Hub 下架，Compose 改用社群 fork `pgsty/minio`（指令與資料格式相同）。若改接真實 AWS S3，應由 ECS task role、EC2 instance profile 或 IRSA 提供 IAM credential，不要把 access key 寫進 image、Git 或部署設定檔。
 
 正式環境至少提供：
 
@@ -158,7 +158,7 @@ Flyway 會在應用程式啟動時執行 `classpath:db/migration`，成功後才
 
 Flyway 預設啟用 migration validation，且禁止 `clean`。若 migration 失敗，應用程式會直接啟動失敗，不會在不完整 schema 上提供服務；可從 log 搜尋 `Flyway` 或 `flyway_schema_history` 排查。
 
-部署到真實 AWS 時不要設定 `S3_ENDPOINT` 或 `S3_PUBLIC_ENDPOINT`；這兩個值只供 LocalStack 使用。Bucket 需預先包含背景與徽章 object key，作品則由 API 寫入 `artworks/{userId}/{uuid}.png`。
+設了 `S3_ENDPOINT`（後端連 MinIO 的內網位址）與 `S3_PUBLIC_ENDPOINT`（瀏覽器開圖片的公開網址）後端就會走 MinIO；改接真實 AWS S3 時兩個都不要設定。Bucket 需預先包含背景與徽章 object key，作品則由 API 寫入 `artworks/{userId}/{uuid}.png`。
 
 ## EC2 與 ALB
 

@@ -13,8 +13,8 @@ class S3ConfigurationTest {
         var properties = new S3Properties(
                 "good-morning-local",
                 "ap-southeast-2",
-                "http://localstack:4566",
-                "http://localhost:4566",
+                "http://minio:9000",
+                "http://localhost:9000",
                 Duration.ofMinutes(15));
         var configuration = new S3Configuration();
 
@@ -25,7 +25,7 @@ class S3ConfigurationTest {
             var url = storage.readUrl("artworks/1/test.png");
 
             assertThat(url.getHost()).isEqualTo("localhost");
-            assertThat(url.getPort()).isEqualTo(4566);
+            assertThat(url.getPort()).isEqualTo(9000);
             assertThat(url.getPath())
                     .isEqualTo("/good-morning-local/artworks/1/test.png");
         }

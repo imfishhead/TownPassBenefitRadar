@@ -16,6 +16,9 @@ services:
     environment:
       - BACKEND_URL=http://backend:8080
       - GRAFANA_URL=http://grafana:3000
+      # 圖片的簽名網址指向公開網址的 /<bucket>/...，由這個 Nginx 轉給 MinIO（只放行 GET/HEAD）
+      - S3_URL=http://minio:9000
+      - S3_BUCKET=${AWS_S3_BUCKET:-taipei-code-fest-assets}
     restart: always
     depends_on:
       backend:
@@ -43,14 +46,16 @@ services:
       - SERVER_PORT=8080
       - MANAGEMENT_SERVER_PORT=8081
       - MANAGEMENT_SERVER_ADDRESS=0.0.0.0
-      # AWS S3 與 IAM 設定
+      # 物件儲存：自架 MinIO（S3 相容），與 backend 在同一個 Compose 網路
       - AWS_REGION=${AWS_REGION:-ap-southeast-2}
       - AWS_S3_BUCKET=${AWS_S3_BUCKET:-taipei-code-fest-assets}
       - PRESIGNED_URL_TTL=${PRESIGNED_URL_TTL:-PT15M}
-      # EC2 正式環境留空並使用 instance role；非 EC2 smoke test 可由 shell 暫時傳入。
-      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-}
-      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-}
-      - AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN:-}
+      # 這組金鑰同時是 MinIO 的 root 帳密（沿用 AWS_* 變數名稱，AWS SDK 才讀得到）。必填、MinIO 要求密碼至少 8 字元。
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:?請在 .env 設定 AWS_ACCESS_KEY_ID（MinIO 帳號）}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:?請在 .env 設定 AWS_SECRET_ACCESS_KEY（MinIO 密碼，至少 8 字元）}
+      # 設了 S3_ENDPOINT 後端就改用 MinIO（path-style）；S3_PUBLIC_ENDPOINT 是瀏覽器開圖片用的公開網址（ALB 網址，同網域，結尾不要斜線）
+      - S3_ENDPOINT=http://minio:9000
+      - S3_PUBLIC_ENDPOINT=${S3_PUBLIC_ENDPOINT:-http://localhost}
     ports:
       - "127.0.0.1:8080:8080"
       - "127.0.0.1:8081:8081"
@@ -72,6 +77,50 @@ services:
       start_period: 20s
     depends_on:
       mariadb:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+
+  # ==============================
+  # 物件儲存 (MinIO，S3 相容)：取代 AWS S3
+  # 官方 minio/minio 映像檔已從 Docker Hub 下架，這裡用社群 fork pgsty/minio
+  # （指令、環境變數、資料格式與上游相同，內含 mc 與 curl）。
+  # 不對外開 9000：瀏覽器經 frontend Nginx 的 /<bucket>/ 取圖；管理 console 只綁 EC2 loopback。
+  # ==============================
+  minio:
+    image: pgsty/minio:RELEASE.2026-08-04T00-00-00Z
+    container_name: minio
+    command: ["server", "/data", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_USER: ${AWS_ACCESS_KEY_ID:?請在 .env 設定 AWS_ACCESS_KEY_ID（MinIO 帳號）}
+      MINIO_ROOT_PASSWORD: ${AWS_SECRET_ACCESS_KEY:?請在 .env 設定 AWS_SECRET_ACCESS_KEY（MinIO 密碼，至少 8 字元）}
+      # 與後端 AWS_REGION 一致，否則 SigV4 簽章的 region 會被拒絕
+      MINIO_REGION: ${AWS_REGION:-ap-southeast-2}
+    volumes:
+      - minio-data:/data
+    ports:
+      - "127.0.0.1:9001:9001"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:9000/minio/health/live"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+    restart: always
+
+  # 一次性：建立 bucket（已存在就略過），完成後 backend 才啟動。背景與徽章圖要另外放進 bucket（見 runbook）。
+  minio-init:
+    image: pgsty/minio:RELEASE.2026-08-04T00-00-00Z
+    container_name: minio-init
+    entrypoint: ["bash", "/init/init-bucket.sh"]
+    environment:
+      MINIO_ROOT_USER: ${AWS_ACCESS_KEY_ID:?請在 .env 設定 AWS_ACCESS_KEY_ID（MinIO 帳號）}
+      MINIO_ROOT_PASSWORD: ${AWS_SECRET_ACCESS_KEY:?請在 .env 設定 AWS_SECRET_ACCESS_KEY（MinIO 密碼，至少 8 字元）}
+      AWS_S3_BUCKET: ${AWS_S3_BUCKET:-taipei-code-fest-assets}
+    volumes:
+      - ./backend/docker/minio:/init:ro
+    restart: "no"
+    depends_on:
+      minio:
         condition: service_healthy
 
   # ==============================
@@ -195,6 +244,7 @@ services:
 
 volumes:
   mariadb-data:
+  minio-data:
   prometheus-data:
   grafana-data:
   loki-data:

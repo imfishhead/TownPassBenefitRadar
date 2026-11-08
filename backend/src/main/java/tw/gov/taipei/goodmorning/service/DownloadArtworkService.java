@@ -1,5 +1,7 @@
 package tw.gov.taipei.goodmorning.service;
 
+import java.time.Clock;
+import java.time.LocalDate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -21,16 +23,19 @@ public class DownloadArtworkService {
     private final ObjectStorage storage;
     private final QrCodeComposer composer;
     private final BusinessMetrics metrics;
+    private final Clock clock;
 
     public DownloadArtworkService(
             ArtworkRepository artworks,
             ObjectStorage storage,
             QrCodeComposer composer,
-            BusinessMetrics metrics) {
+            BusinessMetrics metrics,
+            Clock clock) {
         this.artworks = artworks;
         this.storage = storage;
         this.composer = composer;
         this.metrics = metrics;
+        this.clock = clock;
     }
 
     @Transactional
@@ -42,7 +47,8 @@ public class DownloadArtworkService {
                         "Artwork was not found"));
 
         var source = getSource(artwork.getImageObjectKey());
-        var composed = composer.compose(source, artwork.getPolicySourceUrl());
+        // QR 下方印「下載當天」的日期（應用程式時鐘為 Asia/Taipei）
+        var composed = composer.compose(source, artwork.getPolicySourceUrl(), LocalDate.now(clock));
         var counted = !artwork.getOwner().getId().equals(currentUser.id());
         if (counted) {
             artworks.incrementDownloadCount(artworkId);

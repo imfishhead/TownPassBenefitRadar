@@ -25,7 +25,7 @@ import tw.gov.taipei.goodmorning.config.S3Properties;
 class S3ObjectStorageIntegrationTest {
 
     private static final Region REGION = Region.AP_SOUTHEAST_2;
-    private static final URI ENDPOINT = URI.create("http://localstack:4566");
+    private static final URI ENDPOINT = URI.create("http://minio:9000");
     private static final String BUCKET = "storage-test-" + UUID.randomUUID();
     private static S3Client client;
     private static S3Presigner presigner;
@@ -33,7 +33,7 @@ class S3ObjectStorageIntegrationTest {
 
     @BeforeAll
     static void setUp() {
-        var credentials = StaticCredentialsProvider.create(AwsBasicCredentials.create("test", "test"));
+        var credentials = StaticCredentialsProvider.create(AwsBasicCredentials.create("minioadmin", "minioadmin"));
         var s3Configuration = software.amazon.awssdk.services.s3.S3Configuration.builder()
                 .pathStyleAccessEnabled(true)
                 .build();

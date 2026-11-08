@@ -26,7 +26,7 @@ GoodMorning（Vue 3 + Vite）
           ▼
 Nginx → Spring Boot API
           ├─ MariaDB
-          └─ S3（本機使用 LocalStack）
+          └─ MinIO（S3 相容物件儲存）
 
 Spring Boot Actuator → Prometheus → Grafana
 ```
@@ -57,7 +57,7 @@ npm run dev
 
 ### 完整本機環境
 
-先啟動 API、MariaDB、LocalStack、Prometheus 與 Grafana：
+先啟動 API、MariaDB、MinIO、Prometheus 與 Grafana：
 
 ```sh
 cd backend
@@ -99,4 +99,4 @@ docker compose run --rm api mvn verify
 
 ## EC2 Deployment
 
-單台 EC2 + ALB 的正式部署請依照 [`backend/docs/deployment/ec2-compose-alb-runbook.md`](backend/docs/deployment/ec2-compose-alb-runbook.md)。根目錄 `.env.example` 列出必填參數；完成 EC2 IAM role 與 `.env` 後，以 `docker compose up -d --build` 啟動整組服務。
+單台 EC2 + ALB 的正式部署請依照 [`backend/docs/deployment/ec2-compose-alb-runbook.md`](backend/docs/deployment/ec2-compose-alb-runbook.md)。根目錄 `.env.example` 列出必填參數；填好 `.env`（含 MinIO 帳密與 `S3_PUBLIC_ENDPOINT`）後，以 `docker compose up -d --build` 啟動整組服務。EC2 版同樣使用自架 MinIO 當物件儲存，背景與徽章圖需另外放進 bucket，步驟見 runbook。

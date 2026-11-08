@@ -7,6 +7,10 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.time.Clock;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -20,6 +24,9 @@ class DownloadArtworkServiceTest {
 
     private static final byte[] SOURCE_PNG = {1, 2, 3};
     private static final byte[] COMPOSED_PNG = {4, 5, 6};
+    // UTC 還是 11/7 16:30，台北已經是 11/8 00:30：確認印的是台北的「今天」
+    private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-11-07T16:30:00Z"), ZoneId.of("Asia/Taipei"));
+    private static final LocalDate TODAY_IN_TAIPEI = LocalDate.of(2026, 11, 8);
     private static final CurrentUser AUTHOR =
             new CurrentUser(7L, "author-subject", "author", "作者");
     private static final CurrentUser VIEWER =
@@ -38,7 +45,7 @@ class DownloadArtworkServiceTest {
         storage = mock(ObjectStorage.class);
         composer = mock(QrCodeComposer.class);
         metrics = mock(BusinessMetrics.class);
-        service = new DownloadArtworkService(artworks, storage, composer, metrics);
+        service = new DownloadArtworkService(artworks, storage, composer, metrics, CLOCK);
 
         var owner = mock(User.class);
         when(owner.getId()).thenReturn(7L);
@@ -48,7 +55,7 @@ class DownloadArtworkServiceTest {
         when(artwork.getPolicySourceUrl()).thenReturn("https://example.gov.tw/snapshotted-policy");
         when(artworks.findById(42L)).thenReturn(Optional.of(artwork));
         when(storage.get("artworks/7/source.png")).thenReturn(SOURCE_PNG);
-        when(composer.compose(SOURCE_PNG, "https://example.gov.tw/snapshotted-policy"))
+        when(composer.compose(SOURCE_PNG, "https://example.gov.tw/snapshotted-policy", TODAY_IN_TAIPEI))
                 .thenReturn(COMPOSED_PNG);
     }
 
@@ -73,7 +80,7 @@ class DownloadArtworkServiceTest {
 
     @Test
     void failedCompositionDoesNotIncreaseTheCount() {
-        when(composer.compose(SOURCE_PNG, "https://example.gov.tw/snapshotted-policy"))
+        when(composer.compose(SOURCE_PNG, "https://example.gov.tw/snapshotted-policy", TODAY_IN_TAIPEI))
                 .thenThrow(new IllegalStateException("broken image"));
 
         assertThatThrownBy(() -> service.download(VIEWER, 42L))

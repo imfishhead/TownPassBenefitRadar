@@ -50,10 +50,10 @@ services:
       AWS_REGION: ${AWS_REGION:-ap-southeast-2}
       AWS_S3_BUCKET: ${AWS_S3_BUCKET:-good-morning-local}
       PRESIGNED_URL_TTL: ${PRESIGNED_URL_TTL:-PT15M}
-      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-test}
-      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-test}
-      S3_ENDPOINT: http://localstack:4566
-      S3_PUBLIC_ENDPOINT: ${S3_PUBLIC_ENDPOINT:-http://localhost:4566}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-minioadmin}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-minioadmin}
+      S3_ENDPOINT: http://minio:9000
+      S3_PUBLIC_ENDPOINT: ${S3_PUBLIC_ENDPOINT:-http://localhost:9000}
       TESTCONTAINERS_HOST_OVERRIDE: host.docker.internal
     volumes:
       - .:/workspace
@@ -76,8 +76,8 @@ services:
     depends_on:
       mariadb:
         condition: service_healthy
-      localstack:
-        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
 
   prometheus:
     image: prom/prometheus:v3.16.0
@@ -176,22 +176,41 @@ services:
       timeout: 3s
       retries: 30
 
-  localstack:
-    image: localstack/localstack:3.8.1
+  # 本機 S3：MinIO。官方 minio/minio 映像檔已從 Docker Hub 下架，這裡用社群 fork pgsty/minio
+  # （指令、環境變數、資料格式與上游相同，內含 mc 與 curl）。根目錄的 docker-compose.yml（EC2 版）也用同一個映像檔與 init 腳本。
+  minio:
+    image: pgsty/minio:RELEASE.2026-08-04T00-00-00Z
+    command: ["server", "/data", "--console-address", ":9001"]
     environment:
-      SERVICES: s3
-      AWS_DEFAULT_REGION: ${AWS_REGION:-ap-southeast-2}
-      AWS_S3_BUCKET: ${AWS_S3_BUCKET:-good-morning-local}
+      MINIO_ROOT_USER: ${AWS_ACCESS_KEY_ID:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${AWS_SECRET_ACCESS_KEY:-minioadmin}
+      # 與後端 AWS_REGION 一致，否則 SigV4 簽章的 region 會被拒絕
+      MINIO_REGION: ${AWS_REGION:-ap-southeast-2}
     volumes:
-      - localstack-data:/var/lib/localstack
-      - ./docker/localstack:/etc/localstack/init/ready.d:ro
+      - minio-data:/data
     ports:
-      - "4566:4566"
+      - "127.0.0.1:9000:9000"
+      - "127.0.0.1:9001:9001"
     healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://localhost:4566/_localstack/health"]
+      test: ["CMD", "curl", "-fsS", "http://localhost:9000/minio/health/live"]
       interval: 2s
       timeout: 3s
       retries: 30
+
+  # 一次性：建立 bucket（已存在就略過），完成後 api 才啟動
+  minio-init:
+    image: pgsty/minio:RELEASE.2026-08-04T00-00-00Z
+    entrypoint: ["bash", "/init/init-bucket.sh"]
+    environment:
+      MINIO_ROOT_USER: ${AWS_ACCESS_KEY_ID:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${AWS_SECRET_ACCESS_KEY:-minioadmin}
+      AWS_S3_BUCKET: ${AWS_S3_BUCKET:-good-morning-local}
+    volumes:
+      - ./docker/minio:/init:ro
+    restart: "no"
+    depends_on:
+      minio:
+        condition: service_healthy
 
   k6-local:
     <<: *k6-common
@@ -212,7 +231,7 @@ services:
 
 volumes:
   mariadb-data:
-  localstack-data:
+  minio-data:
   maven-cache:
   prometheus-data:
   grafana-data:

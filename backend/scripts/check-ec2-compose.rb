@@ -9,7 +9,7 @@ raise "Compose project name must be good-morning" unless compose["name"] == "goo
 raise "obsolete Compose version key must be removed" if compose.key?("version")
 
 services = compose.fetch("services")
-%w[frontend backend mariadb prometheus grafana loki alloy].each do |service|
+%w[frontend backend mariadb minio minio-init prometheus grafana loki alloy].each do |service|
   raise "missing EC2 service: #{service}" unless services.key?(service)
 end
 
@@ -25,12 +25,47 @@ unless backend_environment.include?(
 )
   raise "backend must default to the dedicated good_morning database user"
 end
-%w[AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN].each do |variable|
-  unless backend_environment.include?("#{variable}=${#{variable}:-}")
-    raise "backend must allow optional #{variable} passthrough for non-EC2 smoke tests"
-  end
+%w[AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY].each do |variable|
+  entry = backend_environment.find { |item| item.start_with?("#{variable}=") }
+  raise "backend must set #{variable} (MinIO credentials)" if entry.nil?
+  raise "backend #{variable} must be required (:?), not defaulted" unless entry.include?(":?")
+end
+unless backend_environment.include?("S3_ENDPOINT=http://minio:9000")
+  raise "backend must reach MinIO at http://minio:9000"
+end
+unless backend_environment.any? { |item| item.start_with?("S3_PUBLIC_ENDPOINT=${S3_PUBLIC_ENDPOINT:-") }
+  raise "backend must take S3_PUBLIC_ENDPOINT from .env"
+end
+unless services.fetch("backend").dig("depends_on", "minio-init", "condition") == "service_completed_successfully"
+  raise "backend must wait for minio-init to create the bucket"
 end
 raise "backend must expose a healthcheck" unless services.fetch("backend").key?("healthcheck")
+
+minio = services.fetch("minio")
+minio_ports = minio.fetch("ports", [])
+unless minio_ports.all? { |port| port.to_s.start_with?("127.0.0.1:") }
+  raise "MinIO must not publish ports beyond EC2 loopback"
+end
+if minio_ports.any? { |port| port.to_s.end_with?(":9000") }
+  raise "MinIO S3 port 9000 must stay private; images go through frontend Nginx"
+end
+raise "MinIO must expose a healthcheck" unless minio.key?("healthcheck")
+%w[MINIO_ROOT_USER MINIO_ROOT_PASSWORD].each do |variable|
+  unless minio.fetch("environment").fetch(variable).include?(":?")
+    raise "MinIO #{variable} must be required (:?), not defaulted"
+  end
+end
+raise "missing named volume: minio-data" unless compose.fetch("volumes").key?("minio-data")
+
+frontend_environment = services.fetch("frontend").fetch("environment")
+unless frontend_environment.include?("S3_URL=http://minio:9000") &&
+       frontend_environment.any? { |item| item.start_with?("S3_BUCKET=${AWS_S3_BUCKET:-") }
+  raise "frontend must proxy /<bucket>/ to MinIO (S3_URL and S3_BUCKET)"
+end
+proxy_script = File.read(File.join(root, "GoodMorning/docker/10-api-proxy.sh"))
+unless proxy_script.include?("limit_except GET HEAD")
+  raise "frontend Nginx must only allow GET/HEAD on the public MinIO route"
+end
 
 mariadb_environment = services.fetch("mariadb").fetch("environment")
 unless mariadb_environment.fetch("MARIADB_USER") == "${DB_USERNAME:-good_morning}"
@@ -96,6 +131,9 @@ env_example = File.read(File.join(root, ".env.example"))
   DB_ROOT_PASSWORD
   AWS_REGION
   AWS_S3_BUCKET
+  AWS_ACCESS_KEY_ID
+  AWS_SECRET_ACCESS_KEY
+  S3_PUBLIC_ENDPOINT
   GRAFANA_ROOT_URL
   GRAFANA_ADMIN_PASSWORD
 ].each do |variable|
@@ -107,7 +145,7 @@ raise "root .env must be ignored" unless gitignore.lines.map(&:strip).include?("
 
 runbook_path = File.join(root, "backend/docs/deployment/ec2-compose-alb-runbook.md")
 runbook = File.read(runbook_path)
-%w[/healthz /actuator/health /grafana/ /api/v1/me /api/swagger-ui/index.html].each do |marker|
+%w[/healthz /actuator/health /grafana/ /api/v1/me /api/swagger-ui/index.html S3_PUBLIC_ENDPOINT minio-data].each do |marker|
   raise "EC2 runbook is missing #{marker}" unless runbook.include?(marker)
 end
 
