@@ -4,7 +4,7 @@ test('作品牆可切換排行榜與最新作品', async ({ page }) => {
   await page.goto('./#/')
 
   await expect(page.getByRole('banner')).toBeVisible()
-  await expect(page.getByRole('heading', { level: 1, name: '早安政策圖' })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 1, name: '古摸泥：政策長輩圖產生器' })).toBeVisible()
   await expect(page.getByRole('button', { name: '關閉' })).toBeVisible()
   const ranking = page.getByRole('tab', { name: '排行榜' })
   const latest = page.getByRole('tab', { name: '最新' })

@@ -2,7 +2,7 @@
   "name": "good-morning-policy",
   "version": "0.1.0",
   "private": true,
-  "description": "早安政策長輩圖：用台北景點與市政標語製作、分享長輩圖（TownPass WebView 微服務）",
+  "description": "古摸泥：用台北景點與市政標語製作、分享政策長輩圖（TownPass WebView 微服務）",
   "license": "AGPL-3.0-only",
   "type": "module",
   "scripts": {

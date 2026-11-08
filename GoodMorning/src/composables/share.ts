@@ -1,5 +1,5 @@
 /**
- * 分享「早安政策圖」給親友（獲得徽章的慶祝畫面使用）。
+ * 分享「古摸泥」給親友（獲得徽章的慶祝畫面使用）。
  * 手機支援系統分享就叫出分享選單（LINE、訊息都在裡面）；不支援就複製連結（回傳 'copied'）；複製也失敗就回傳 'manual'，由畫面顯示連結讓人長按複製。
  */
 
@@ -16,8 +16,8 @@ export function shareUrl(): string {
 
 export function shareMessage(badge?: { level: number; name: string } | null): string {
   return badge
-    ? `我在台北通的「早安政策圖」拿到 Lv.${badge.level} ${badge.name} 徽章！你也來做一張長輩圖：`
-    : '我在台北通的「早安政策圖」做了長輩圖，你也來做一張：'
+    ? `我在台北通的「古摸泥」拿到 Lv.${badge.level} ${badge.name} 徽章！你也來做一張長輩圖：`
+    : '我在台北通的「古摸泥」做了長輩圖，你也來做一張：'
 }
 
 export type ShareResult = 'shared' | 'copied' | 'manual' | 'cancelled'
@@ -53,7 +53,7 @@ export async function shareApp(badge?: { level: number; name: string } | null): 
   const url = shareUrl()
   if (typeof navigator.share === 'function') {
     try {
-      await navigator.share({ title: '早安政策圖', text, url })
+      await navigator.share({ title: '古摸泥：政策長輩圖產生器', text, url })
       return 'shared'
     } catch (e) {
       // 使用者自己關掉分享選單：不算失敗，不要再跳提示

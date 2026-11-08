@@ -14,7 +14,7 @@ export const router = createRouter({
   // hash 模式：靜態主機與 TownPass WebView 都不需伺服器 rewrite，返回鍵可用
   history: createWebHashHistory(),
   routes: [
-    { path: '/', name: 'feed', component: FeedView, meta: { title: '早安政策圖', tab: 'feed' } },
+    { path: '/', name: 'feed', component: FeedView, meta: { title: '古摸泥：政策長輩圖產生器', tab: 'feed' } },
     {
       path: '/create',
       name: 'create',

@@ -1,6 +1,6 @@
-# Good Morning Backend
+# 古摸泥 Backend
 
-台北政策長輩圖 Demo 後端，使用 Spring Boot 4、MariaDB、S3、Prometheus、Grafana、Loki 與 Grafana Alloy。開發與測試全程在 container 內執行，本機不需要安裝 Java 或 Maven。
+「古摸泥：政策長輩圖產生器」後端，使用 Spring Boot 4、MariaDB、S3、Prometheus、Grafana、Loki 與 Grafana Alloy。開發與測試全程在 container 內執行，本機不需要安裝 Java 或 Maven。
 
 ## 本機啟動
 

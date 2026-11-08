@@ -1,6 +1,6 @@
-# 早安政策圖 / Good Morning Policy Cards
+# 古摸泥：政策長輩圖產生器
 
-> 長輩每天在 LINE 群組傳早安圖，市府的政策宣傳卻很少走這條管道。早安政策圖先自動配好背景、問候語與政策，使用者確認後就能儲存，也可再進入編輯器調整；成品上的 QR Code 會連回政策說明。
+> 長輩每天在 LINE 群組傳早安圖，市府的政策宣傳卻很少走這條管道。古摸泥先自動配好背景、問候語與政策，使用者確認後就能儲存，也可再進入編輯器調整；成品上的 QR Code 會連回政策說明。
 
 本資料夾是 TownPass（台北通）WebView 微服務的前端。需求以 [`../backend/good-morning.md`](../backend/good-morning.md) 為準，API 契約以 [`../backend/openapi.yaml`](../backend/openapi.yaml) v0.1.0 為準；TownPass App 端的修改位於同一個倉庫的 `TownPass/`。
 
@@ -346,7 +346,7 @@ docker run --rm -p 8080:80 -e BACKEND_URL=http://backend:8080 good-morning
 
 ## 10. 團隊與致謝
 
-- imfishhead（Tylia）：早安政策圖前端、TownPass App 每日提醒 handler
+- imfishhead（Tylia）：古摸泥前端、TownPass App 每日提醒 handler
 
 使用的開放資料、UI 資源、套件與第三方服務：
 

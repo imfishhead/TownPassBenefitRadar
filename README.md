@@ -1,10 +1,12 @@
-# 早安政策圖 / Good Morning Policy Cards
+# 古摸泥：政策長輩圖產生器
 
 - [前端詳細 README](./GoodMorning/README.md)
 - [後端詳細 README](./backend/README.md)
 - [TownPass App](https://github.com/imfishhead/TownPass)
 
 TownPass WebView 微服務，讓長輩用台北景點或自己的照片製作問候圖，加入市政政策標語與 QR Code，再儲存分享給親友。
+
+> `dev` branch 為可上線版本。
 
 ## Features
 

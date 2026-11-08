@@ -9,7 +9,7 @@ import { titleOverride } from './composables/pageTitle'
 import { apiMode } from './api'
 
 const route = useRoute()
-const title = computed(() => titleOverride.value ?? route.meta.title ?? '早安政策圖')
+const title = computed(() => titleOverride.value ?? route.meta.title ?? '古摸泥：政策長輩圖產生器')
 const main = ref<HTMLElement | null>(null)
 // 內容區自己捲動，換頁時回到頂端；並把焦點移到新頁面的標題（NCC 1.4／台北通 FC），
 // 讀報軟體會唸出新頁面是什麼，鍵盤使用者也從頁面最上面開始。第一次進來不動焦點。

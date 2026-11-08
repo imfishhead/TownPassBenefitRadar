@@ -31,7 +31,7 @@ async function share() {
   const b = s.value.blob
   if (!b) return
   try {
-    await navigator.share({ files: [new File([b], s.value.filename, { type: 'image/png' })], title: '早安政策圖' })
+    await navigator.share({ files: [new File([b], s.value.filename, { type: 'image/png' })], title: '古摸泥：政策長輩圖產生器' })
   } catch (e) {
     if ((e as DOMException)?.name !== 'AbortError') toast('分享沒有成功，可改用長按圖片儲存', 'error')
   }
