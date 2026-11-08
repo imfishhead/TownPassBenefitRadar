@@ -6,6 +6,7 @@ import TabBar from './components/TabBar.vue'
 import ToastHost from './components/ToastHost.vue'
 import DownloadSheet from './components/DownloadSheet.vue'
 import { titleOverride } from './composables/pageTitle'
+import { apiMode } from './api'
 
 const route = useRoute()
 const title = computed(() => titleOverride.value ?? route.meta.title ?? '早安政策圖')
@@ -24,6 +25,9 @@ watch(
 
 <template>
   <TopBar :title="title" />
+  <p v-if="apiMode === 'mock'" class="demo-notice" role="note">
+    示範資料：人物為示範人物，116 年度參數皆為示意
+  </p>
   <main ref="main">
     <RouterView />
   </main>
@@ -31,3 +35,15 @@ watch(
   <DownloadSheet />
   <ToastHost />
 </template>
+
+<style scoped>
+.demo-notice {
+  flex: none;
+  padding: 6px 16px;
+  background: var(--tp-warning-100, #fff4d6);
+  color: var(--c-text);
+  font-size: var(--tp-font-body);
+  line-height: var(--tp-lh-body);
+  text-align: center;
+}
+</style>
